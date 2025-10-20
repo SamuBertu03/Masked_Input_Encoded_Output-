@@ -16,9 +16,18 @@ WD = 1e-4                                                   # weight decay
 PATIENCE = 12                                               # early stopping
 DATA_DIR = "../preprocessed_10y75pct"
 RUNS_DIR = "../NEWres_ann"                         # dove salvare i risultati
-RUN_NAME = "annOnly75pct"                          # nome run
+RUN_NAME = "experiment19"                          # nome run
 SEED = 42                                          # seed di riproducibilità
 
+
+
+BINARY_COLS = []
+bin_path = Path(DATA_DIR) / "binary_cols.txt"
+if bin_path.exists():
+    with open(bin_path, "r", encoding="utf-8") as f:
+        BINARY_COLS = [ln.strip() for ln in f if ln.strip()]
+else:
+    BINARY_COLS = []
 
 
 
@@ -79,8 +88,16 @@ def load_split(split):
 
 def make_tensor_inputs(X, M):
     
-    Xz = X.fillna(0.0).astype("float32").values         # settiamo i null a 0.0
-    
+    X2 = X.copy()
+
+    if BINARY_COLS:        
+        present_bin_cols = [c for c in BINARY_COLS if c in X2.columns]
+        if present_bin_cols:
+            X2.loc[:, present_bin_cols] = X2.loc[:, present_bin_cols].fillna(2.0)
+
+   
+    Xz = X2.fillna(0.0).astype("float32").values
+
     Mm = M.astype("float32").values
     X_in = np.concatenate([Xz, Mm], axis=1)             # Concatenazione dati e maschera: [X_zero || Mask]
     return torch.from_numpy(X_in)                       # Tensore pytorch
