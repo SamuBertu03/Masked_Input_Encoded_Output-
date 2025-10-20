@@ -11,7 +11,7 @@ from sklearn.metrics import precision_score, recall_score
 DATA_DIR = "../preprocessed_10y0.1pct"
 ART_DIR  = "/home/sbertucci/NEWres_mieo/mieo_pretrain0.1pct"                           
 RUNS_DIR = "../NEWres_mieo&head"
-RUN_NAME = "experimentWith0.1pct"
+RUN_NAME = "experiment21"
 SEED     = 42
 
 BATCH    = 1024
@@ -20,6 +20,15 @@ LR       = 2e-3
 WD       = 1e-4
 PATIENCE = 12
 # =====================
+
+BINARY_COLS = []
+bin_path = Path(DATA_DIR) / "binary_cols.txt"
+if bin_path.exists():
+    with open(bin_path, "r", encoding="utf-8") as f:
+        BINARY_COLS = [ln.strip() for ln in f if ln.strip()]
+else:
+    BINARY_COLS = []
+
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -41,9 +50,19 @@ def _read(base):
 #Funzione per preparare l'input
 
 def make_xin(X, M):
-    Xz = X.fillna(0.0).astype("float32").values
+    X2 = X.copy()
+
+    if BINARY_COLS:
+        present_bin_cols = [c for c in BINARY_COLS if c in X2.columns]
+        if present_bin_cols:
+            X2.loc[:, present_bin_cols] = X2.loc[:, present_bin_cols].fillna(2.0)
+
+    
+    Xz = X2.fillna(0.0).astype("float32").values
+
     Mm = M.astype("float32").values
     return torch.from_numpy(np.concatenate([Xz, Mm], axis=1))
+
 
 
 
